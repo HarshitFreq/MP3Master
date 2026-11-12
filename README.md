@@ -1,29 +1,46 @@
 # 🎵 MP3Master
 
-A modern, high-performance, minimalist personal web application for searching and downloading high-quality MP3 audio from **YouTube**, **Spotify**, and **Apple Music** with automatic 1:1 square album cover art cropping and ID3 tag metadata embedding.
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
+[![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-red?style=flat-square)](https://github.com/yt-dlp/yt-dlp)
+[![FFmpeg](https://img.shields.io/badge/FFmpeg-6.0+-green?style=flat-square&logo=ffmpeg)](https://ffmpeg.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-![MP3Master Light Mode](https://raw.githubusercontent.com/harshit-911/MP3Master/main/public/preview.png)
+A modern, high-performance web application for searching and downloading high-quality MP3 audio from **YouTube**, **Spotify**, and **Apple Music** with lossless **original studio album cover art embedding**, **clean filenames**, and **uncapped batch playlist downloads**.
 
 ---
 
 ## ✨ Key Features
 
-- **🚀 Smart Song Search**: Search for any track title or artist name, and MP3Master will automatically match and convert the highest quality YouTube audio stream.
-- **🟢 Zero-API Spotify & Apple Music Importer**: Paste any public **Spotify** or **Apple Music** playlist, album, or track link to extract the entire track list and download as MP3s without needing API keys.
-- **🖼️ Original Studio Album Cover Art & ID3 Embedding**: Automatically retrieves the official high-resolution studio square cover art directly from Spotify (640×640) and Apple Music (1200×1200+) and embeds it into the MP3 ID3 container using FFmpeg.
-- **⚡ Sequential Batch & ZIP Downloader**: Download multi-track playlists in one click. Tracks and the ZIP archive retain their exact original written names as on Spotify and Apple Music without unwanted numbering or forced sorting prefixes.
-- **🎯 High-Precision Track Matcher**: Prioritizes YouTube Music official topic channels (`Artist - Topic`), matches exact song duration (±5s tolerance), and filters out live bootlegs or compilation noise.
-- **🛡️ Resilient Fallback System**: Automatically catches geo-restrictions or postprocessing errors and retries gracefully to guarantee 100% download reliability.
-- **🎚️ Variable Bitrate Quality**: Choose between **320kbps (Extreme Quality)**, **256kbps**, **192kbps**, and **128kbps**.
-- **☀️ Light & Dark Mode**: Beautiful minimalist interface with default Light mode and a one-click Dark mode toggle.
+- **🟢 Zero-API Spotify & Apple Music Importer**: Paste any public **Spotify** or **Apple Music** link (playlists, albums, or individual tracks) to fetch track listings and metadata without requiring developer accounts or API keys.
+- **⚡ Uncapped Batch Downloads (No 100-Track Limit)**: Seamlessly imports entire playlists of any size. Utilizes Spotify's internal Pathfinder GraphQL pagination to load playlists beyond the standard 100-track embed cap (tested on 200+ track playlists).
+- **🖼️ Original Studio Album Cover Art**: Extracts official high-resolution 1:1 square artwork directly from Spotify (640×640) and Apple Music / iTunes Store (1200×1200+), losslessly embedding it into MP3 ID3 tags via FFmpeg.
+- **🏷️ Clean Filename Preservation**: Downloaded tracks retain their exact original written names as shown on Spotify and Apple Music, without artificial track numbering (`01.`, `02.`) or unwanted underscores.
+- **📦 Order-Preserving ZIP Export**: Batch downloads can be packaged and downloaded as a single ZIP archive named after the playlist, with file ordering preserved via internal manifest mapping.
+- **🎯 High-Precision YouTube Matcher**: Intelligently pairs external tracks with the best audio source on YouTube by prioritizing official YouTube Music topic channels (`Artist - Topic`), verifying exact song duration (±5s tolerance), and filtering out live bootlegs or compilation videos.
+- **🚀 Built-in Song Search**: Type any song title or artist name directly into the search bar to preview and download tracks without needing a direct URL.
+- **🎚️ Selectable Audio Bitrates**: Choose your preferred audio quality: **320kbps (Extreme Quality)**, **256kbps**, **192kbps**, or **128kbps**.
+- **📡 Real-Time SSE Progress**: Live download and audio conversion feedback streamed via Server-Sent Events (SSE) with stage tracking (fetching metadata, audio conversion, metadata embedding).
+- **🌓 Minimalist Modern Interface**: Clean, responsive UI built with Next.js 14, Tailwind CSS, and Lucide icons, featuring a one-click Dark / Light mode toggle and built-in binary health checks.
+
+---
+
+## 🔗 Supported URL Formats
+
+| Platform | Supported Types | Examples |
+|---|---|---|
+| **YouTube** | Videos, Playlists, YouTube Music | `youtube.com/watch?v=...`, `youtu.be/...`, `youtube.com/playlist?list=...`, `music.youtube.com/...` |
+| **Spotify** | Tracks, Albums, Playlists (Uncapped) | `open.spotify.com/track/...`, `open.spotify.com/album/...`, `open.spotify.com/playlist/...` |
+| **Apple Music** | Songs, Albums, Playlists | `music.apple.com/.../album/...`, `music.apple.com/.../playlist/...` |
 
 ---
 
 ## 📋 Prerequisites
 
-Before running MP3Master, ensure your system has the following installed:
+Before running MP3Master, ensure your machine has the following tools installed:
 
-1. **Node.js**: v18.0.0 or higher
+1. **Node.js**: v18.0.0 or higher ([Download Node.js](https://nodejs.org/))
 2. **System Binaries**: `yt-dlp` and `ffmpeg`
 
 ### Installing System Dependencies
@@ -33,7 +50,7 @@ Before running MP3Master, ensure your system has the following installed:
 brew install yt-dlp ffmpeg
 ```
 
-#### Linux (Ubuntu/Debian)
+#### Linux (Ubuntu / Debian)
 ```bash
 sudo apt update
 sudo apt install ffmpeg
@@ -41,10 +58,16 @@ sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /u
 sudo chmod a+rx /usr/local/bin/yt-dlp
 ```
 
-#### Windows (via Chocolatey / Scoop)
+#### Windows (via Chocolatey or Scoop)
 ```powershell
+# Using Chocolatey
 choco install yt-dlp ffmpeg
+
+# Using Scoop
+scoop install yt-dlp ffmpeg
 ```
+
+> **Note**: Verify installation in your terminal with `yt-dlp --version` and `ffmpeg -version`.
 
 ---
 
@@ -52,7 +75,7 @@ choco install yt-dlp ffmpeg
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/harshit-911/MP3Master.git
+git clone https://github.com/HarshitFreq/MP3Master.git
 cd MP3Master
 ```
 
@@ -61,18 +84,18 @@ cd MP3Master
 npm install
 ```
 
-### 3. Start the Development Server
+### 3. Run the Development Server
 ```bash
 npm run dev
 ```
 
-Open **[http://localhost:3000](http://localhost:3000)** in your browser to start using MP3Master!
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
 ## 🏗️ Production Build
 
-To compile an optimized production build:
+To build and run an optimized production instance:
 
 ```bash
 npm run build
@@ -88,29 +111,73 @@ MP3Master/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── batch-download/  # Sequential playlist download & ZIP stream
-│   │   │   ├── download/        # SSE progress & single track downloader
+│   │   │   ├── batch-download/  # Sequential playlist downloader & manifest ZIP packager
+│   │   │   ├── cleanup/         # Automated temporary file garbage collection
+│   │   │   ├── download/        # SSE streaming single-track downloader
 │   │   │   ├── file/[id]/       # MP3 & ZIP file delivery endpoint
 │   │   │   ├── health/          # System binary detector (yt-dlp & ffmpeg)
 │   │   │   ├── info/            # YouTube, Spotify & Apple Music metadata parser
 │   │   │   └── search/          # YouTube song search API
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx             # Main application page
-│   ├── components/              # UI components (Header, UrlDropInput, VideoPreviewCard, ProgressCard, DownloadHistory)
-│   └── lib/                     # Core helper modules
-│       ├── musicImporter.ts     # Spotify & Apple Music parser
-│       ├── types.ts             # TypeScript interfaces
-│       ├── utils.ts             # URL parsers & sanitization
-│       └── ytdlp.ts             # yt-dlp & FFmpeg execution wrapper
+│   │   ├── globals.css          # Tailwind CSS global styles & custom animations
+│   │   ├── layout.tsx           # Root layout with theme provider
+│   │   └── page.tsx             # Interactive dashboard with search & download state
+│   ├── components/
+│   │   ├── BinaryHealthBanner.tsx # Visual warning if yt-dlp/ffmpeg are missing
+│   │   ├── DownloadHistory.tsx    # Local history drawer for recently converted tracks
+│   │   ├── Header.tsx             # App header with branding and dark mode switch
+│   │   ├── ProgressCard.tsx       # Live progress bar with stage and bitrate tags
+│   │   ├── UrlDropInput.tsx       # Smart search & link input with clipboard paste
+│   │   └── VideoPreviewCard.tsx   # Playlist tracklist selector & download options
+│   └── lib/
+│       ├── musicImporter.ts     # Spotify (GraphQL paginator) & Apple Music parser
+│       ├── types.ts             # TypeScript data contracts
+│       ├── utils.ts             # Filename sanitation & duration formatters
+│       └── ytdlp.ts             # yt-dlp spawn executor & FFmpeg ID3 metadata tagger
 ├── public/                      # Static assets
-├── README.md
 ├── package.json
-└── tailwind.config.js
+├── tailwind.config.js
+├── tsconfig.json
+└── README.md
 ```
 
 ---
 
-## 📜 License
+## ⚙️ How It Works
 
-This project is open-source and intended for personal educational and offline media archiving use. Please respect copyright laws and terms of service of content providers.
+```mermaid
+flowchart TD
+    A["Paste Link or Search Song"] --> B{"Platform Detection"}
+    B -->|"YouTube"| C["yt-dlp Flat Metadata Extraction"]
+    B -->|"Spotify"| D["Embed Parser + Pathfinder GraphQL Pagination"]
+    B -->|"Apple Music"| E["Serialized Server Data Track Parser"]
+    
+    D --> F["Extract Title, Artist, Album & 640x640 Studio Cover"]
+    E --> G["Filter Songs & Extract 1200x1200 Studio Artwork"]
+    C --> H["Extract Video Metadata & Audio Streams"]
+    
+    F --> I["Precision Matcher (Topic Channel, Duration ±5s)"]
+    G --> I
+    
+    I --> J["yt-dlp Best Audio Stream Download"]
+    H --> J
+    
+    J --> K["FFmpeg Transcoding to MP3 (Selected Bitrate)"]
+    K --> L["FFmpeg ID3 Injection (Studio Album Art + Metadata)"]
+    L --> M["Clean Filename Assignment (No Numbering)"]
+    
+    M --> N{"Batch Download?"}
+    N -->|"Yes"| O["Order-Preserved ZIP Packaging via Manifest"]
+    N -->|"No"| P["Direct MP3 Download"]
+```
+
+---
+
+## 🛡️ License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## ⚠️ Disclaimer
+
+MP3Master is created for personal, educational, and offline archival purposes only. Please respect the intellectual property rights and terms of service of all media platforms and artists.
