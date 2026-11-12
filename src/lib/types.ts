@@ -12,6 +12,11 @@ export interface VideoMetadata {
   isPlaylist?: boolean;
   playlistTitle?: string;
   playlistItems?: VideoMetadata[];
+  songTitle?: string;
+  artist?: string;
+  album?: string;
+  originalCoverArt?: string;
+  spotifyTrackId?: string;
 }
 
 export type DownloadStage = 'idle' | 'fetching_info' | 'downloading' | 'converting' | 'completed' | 'error';

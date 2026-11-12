@@ -15,6 +15,18 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'yt3.ggpht.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image-cdn-ak.spotifycdn.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.mzstatic.com',
+      },
     ],
   },
 };

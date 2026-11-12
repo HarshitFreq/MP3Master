@@ -158,7 +158,7 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
                     ) : (
                       <Square className="w-4 h-4 text-gray-400 shrink-0" />
                     )}
-                    <span className="truncate">{idx + 1}. {item.title}</span>
+                    <span className="truncate">{item.title}</span>
                   </div>
 
                   <span className="text-[11px] text-gray-400 shrink-0">{item.durationFormatted}</span>

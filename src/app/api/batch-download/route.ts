@@ -4,7 +4,8 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { parseYouTubeUrl, sanitizeFilename } from '@/lib/utils';
-import { downloadAudio, findBestTrackMatch } from '@/lib/ytdlp';
+import { downloadAudio, findBestTrackMatch, embedCoverArtAndMetadata } from '@/lib/ytdlp';
+import { resolveOriginalCoverArt } from '@/lib/musicImporter';
 import { DownloadProgress, VideoMetadata } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
 
         const totalTracks = items.length;
         const completedFiles: { fileId: string; fileName: string; title: string; fullPath: string }[] = [];
+        const usedFileNames = new Set<string>();
 
         try {
           for (let i = 0; i < totalTracks; i++) {
@@ -82,10 +84,17 @@ export async function POST(req: NextRequest) {
 
             if (!targetUrl) continue;
 
-            const padIndex = String(i + 1).padStart(2, '0');
             const videoTitle = trackItem.title || `Track ${i + 1}`;
             const cleanTitleName = sanitizeFilename(videoTitle);
-            const fileName = `${padIndex}. ${cleanTitleName}.mp3`;
+            
+            // Name file after exact written track name without numbering or artificial sorting order
+            let fileName = `${cleanTitleName}.mp3`;
+            let duplicateCounter = 1;
+            while (usedFileNames.has(fileName.toLowerCase())) {
+              fileName = `${cleanTitleName} (${duplicateCounter}).mp3`;
+              duplicateCounter++;
+            }
+            usedFileNames.add(fileName.toLowerCase());
 
             const fileId = crypto.randomUUID();
             const tempFileTemplate = path.join(downloadsDir, `${fileId}.%(ext)s`);
@@ -113,11 +122,20 @@ export async function POST(req: NextRequest) {
                 const trackPercent = (progressUpdate.percent || 0) / totalTracks;
                 const overallPercent = Math.min(99, basePercent + trackPercent);
 
+                // Keep batch stage in downloading/converting so the UI doesn't prematurely flash "Batch Complete"
+                const currentStage = progressUpdate.stage === 'completed'
+                  ? 'converting'
+                  : (progressUpdate.stage || 'downloading');
+
+                const statusText = progressUpdate.stage === 'completed'
+                  ? `[Track ${i + 1}/${totalTracks}] Audio converted, embedding album art...`
+                  : `[Track ${i + 1}/${totalTracks}] ${progressUpdate.statusText || 'Converting...'}`;
+
                 sendEvent({
                   id: batchId,
                   url: targetUrl,
                   quality,
-                  stage: progressUpdate.stage || 'downloading',
+                  stage: currentStage,
                   percent: overallPercent,
                   speed: progressUpdate.speed,
                   eta: progressUpdate.eta,
@@ -125,7 +143,7 @@ export async function POST(req: NextRequest) {
                   currentTrackIndex: i + 1,
                   totalTracks,
                   currentTrackTitle: videoTitle,
-                  statusText: `[Track ${i + 1}/${totalTracks}] ${progressUpdate.statusText || 'Converting...'}`,
+                  statusText,
                   completedFiles,
                 });
               });
@@ -140,6 +158,26 @@ export async function POST(req: NextRequest) {
               }
 
               if (fs.existsSync(sourcePath)) {
+                // Resolve and embed original studio album cover art and clean ID3 tags
+                try {
+                  let coverUrl = trackItem.originalCoverArt;
+                  if (!coverUrl) {
+                    coverUrl = await resolveOriginalCoverArt(trackItem);
+                  }
+
+                  const cleanSongTitle = trackItem.songTitle || (trackItem.artist && trackItem.title.includes(' - ') ? trackItem.title.split(' - ').slice(1).join(' - ') : trackItem.title);
+                  const cleanArtist = trackItem.artist || trackItem.uploader || 'Artist';
+
+                  await embedCoverArtAndMetadata(sourcePath, {
+                    coverArtUrl: coverUrl,
+                    title: cleanSongTitle,
+                    artist: cleanArtist,
+                    album: trackItem.album || playlistTitle,
+                  });
+                } catch (embedErr) {
+                  console.warn('Metadata embedding warning for track:', videoTitle, embedErr);
+                }
+
                 fs.copyFileSync(sourcePath, cleanNamedPath);
                 completedFiles.push({
                   fileId,
@@ -157,15 +195,27 @@ export async function POST(req: NextRequest) {
           let zipFileId: string | undefined;
           let zipFileName: string | undefined;
 
-          if (completedFiles.length > 1) {
+          if (completedFiles.length >= 1) {
             zipFileId = crypto.randomUUID();
-            zipFileName = `${sanitizeFilename(playlistTitle)}.zip`;
+            const safePlaylistTitle = sanitizeFilename(playlistTitle) || 'Playlist';
+            zipFileName = `${safePlaylistTitle}.zip`;
             const zipPath = path.join(downloadsDir, `${zipFileId}.zip`);
 
+            const manifestPath = path.join(batchFolder, '_zip_manifest.txt');
             try {
-              execSync(`cd "${batchFolder}" && zip -j "${zipPath}" *.mp3`, { stdio: ['pipe', 'pipe', 'ignore'] });
+              // Write manifest to preserve exact playlist order without shell alphabetical reordering
+              fs.writeFileSync(manifestPath, completedFiles.map(f => f.fileName).join('\n'), 'utf-8');
+              execSync(`cd "${batchFolder}" && zip -j "${zipPath}" -@ < "${manifestPath}"`, { stdio: ['pipe', 'pipe', 'ignore'] });
             } catch (zipErr) {
               console.error('Error packaging ZIP archive:', zipErr);
+              // Fallback to direct zip if manifest pipe fails
+              try {
+                execSync(`cd "${batchFolder}" && zip -j "${zipPath}" *.mp3`, { stdio: ['pipe', 'pipe', 'ignore'] });
+              } catch {}
+            } finally {
+              try {
+                if (fs.existsSync(manifestPath)) fs.unlinkSync(manifestPath);
+              } catch {}
             }
           }
 

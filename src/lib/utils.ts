@@ -70,12 +70,36 @@ export function formatDuration(seconds: number): string {
   return `${formattedMins}:${formattedSecs}`;
 }
 
+export function decodeHtmlEntities(str: string): string {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ');
+}
+
 export function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[/\s?%*:|"<>]/g, '_')
-    .replace(/_{2,}/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .substring(0, 150);
+  if (!filename || typeof filename !== 'string') return 'audio';
+  
+  return decodeHtmlEntities(filename)
+    // Replace colons, forward slashes, and backslashes with clean separator
+    .replace(/[/\\:]/g, ' - ')
+    // Remove characters that are illegal across filesystems: * ? " < > |
+    .replace(/[*?"<>|]/g, '')
+    // Remove non-printable control characters
+    .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+    // Collapse multiple consecutive spaces or hyphens
+    .replace(/\s+/g, ' ')
+    .replace(/\s*-\s*-\s*/g, ' - ')
+    // Trim surrounding spaces, dots, and hyphens
+    .trim()
+    .replace(/^[.\s-]+|[.\s-]+$/g, '')
+    .substring(0, 150) || 'audio';
 }
 
 export function formatBytes(bytes: number, decimals = 2): string {

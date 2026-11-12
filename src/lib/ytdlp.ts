@@ -546,3 +546,98 @@ function runYtDlpSpawn(
     });
   });
 }
+
+export interface EmbedOptions {
+  coverArtUrl?: string;
+  title?: string;
+  artist?: string;
+  album?: string;
+}
+
+/**
+ * Losslessly embeds original high-resolution square album cover art and clean ID3v2 tags into the MP3 file using FFmpeg
+ */
+export async function embedCoverArtAndMetadata(
+  mp3Path: string,
+  options: EmbedOptions
+): Promise<void> {
+  const ffmpegPath = findExecutable('ffmpeg');
+  if (!ffmpegPath || !fs.existsSync(mp3Path)) {
+    return;
+  }
+
+  const { coverArtUrl, title, artist, album } = options;
+  if (!coverArtUrl && !title && !artist && !album) {
+    return;
+  }
+
+  let tempCoverPath: string | null = null;
+  try {
+    if (coverArtUrl) {
+      try {
+        const res = await fetch(coverArtUrl);
+        if (res.ok) {
+          const buffer = Buffer.from(await res.arrayBuffer());
+          tempCoverPath = `${mp3Path}.temp_cover.jpg`;
+          fs.writeFileSync(tempCoverPath, buffer);
+        }
+      } catch (err) {
+        console.warn('Failed to download cover art from URL:', coverArtUrl, err);
+      }
+    }
+
+    const tempTaggedPath = `${mp3Path}.tagged.mp3`;
+    const ffmpegArgs: string[] = ['-y', '-i', mp3Path];
+
+    if (tempCoverPath && fs.existsSync(tempCoverPath)) {
+      ffmpegArgs.push('-i', tempCoverPath);
+      ffmpegArgs.push('-map', '0:a', '-map', '1:0');
+      ffmpegArgs.push('-c', 'copy');
+      ffmpegArgs.push('-id3v2_version', '3');
+      ffmpegArgs.push('-metadata:s:v', 'title=Album cover', '-metadata:s:v', 'comment=Cover (front)');
+    } else {
+      ffmpegArgs.push('-c', 'copy');
+      ffmpegArgs.push('-id3v2_version', '3');
+    }
+
+    if (title) ffmpegArgs.push('-metadata', `title=${title}`);
+    if (artist) ffmpegArgs.push('-metadata', `artist=${artist}`);
+    if (album) ffmpegArgs.push('-metadata', `album=${album}`);
+
+    ffmpegArgs.push(tempTaggedPath);
+
+    await new Promise<void>((resolve) => {
+      const child = spawn(ffmpegPath, ffmpegArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+      let stderr = '';
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+      child.on('close', (code) => {
+        if (code === 0 && fs.existsSync(tempTaggedPath)) {
+          fs.copyFileSync(tempTaggedPath, mp3Path);
+          try {
+            fs.unlinkSync(tempTaggedPath);
+          } catch {}
+        } else {
+          try {
+            if (fs.existsSync(tempTaggedPath)) fs.unlinkSync(tempTaggedPath);
+          } catch {}
+          console.warn('FFmpeg embedding note:', stderr);
+        }
+        resolve();
+      });
+      child.on('error', (err) => {
+        console.warn('FFmpeg process error:', err);
+        resolve();
+      });
+    });
+  } catch (err) {
+    console.warn('embedCoverArtAndMetadata error:', err);
+  } finally {
+    if (tempCoverPath && fs.existsSync(tempCoverPath)) {
+      try {
+        fs.unlinkSync(tempCoverPath);
+      } catch {}
+    }
+  }
+}

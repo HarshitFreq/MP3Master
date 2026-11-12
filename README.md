@@ -10,8 +10,8 @@ A modern, high-performance, minimalist personal web application for searching an
 
 - **🚀 Smart Song Search**: Search for any track title or artist name, and MP3Master will automatically match and convert the highest quality YouTube audio stream.
 - **🟢 Zero-API Spotify & Apple Music Importer**: Paste any public **Spotify** or **Apple Music** playlist, album, or track link to extract the entire track list and download as MP3s without needing API keys.
-- **🖼️ 1:1 Square Album Cover Art**: Automatically crops widescreen YouTube thumbnails into standard 1:1 square album art using FFmpeg filters (`crop=ih:ih`) and embeds them into the MP3's ID3 metadata container.
-- **⚡ Sequential Batch & ZIP Downloader**: Download multi-track playlists in one click. Tracks inside the ZIP archive are cleanly formatted and numbered (e.g. `01. Artist - Track Name.mp3`).
+- **🖼️ Original Studio Album Cover Art & ID3 Embedding**: Automatically retrieves the official high-resolution studio square cover art directly from Spotify (640×640) and Apple Music (1200×1200+) and embeds it into the MP3 ID3 container using FFmpeg.
+- **⚡ Sequential Batch & ZIP Downloader**: Download multi-track playlists in one click. Tracks and the ZIP archive retain their exact original written names as on Spotify and Apple Music without unwanted numbering or forced sorting prefixes.
 - **🎯 High-Precision Track Matcher**: Prioritizes YouTube Music official topic channels (`Artist - Topic`), matches exact song duration (±5s tolerance), and filters out live bootlegs or compilation noise.
 - **🛡️ Resilient Fallback System**: Automatically catches geo-restrictions or postprocessing errors and retries gracefully to guarantee 100% download reliability.
 - **🎚️ Variable Bitrate Quality**: Choose between **320kbps (Extreme Quality)**, **256kbps**, **192kbps**, and **128kbps**.
