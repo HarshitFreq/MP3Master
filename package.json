@@ -1,7 +1,7 @@
 {
   "name": "mp3master",
   "version": "0.1.0",
-  "description": "Fast MP3 downloader for YouTube, Spotify, and Apple Music with original album art & ID3 tags.",
+  "description": "Fast, clean MP3 downloader for YouTube, Spotify, and Apple Music.",
   "author": "Harshit Sahu",
   "repository": {
     "type": "git",

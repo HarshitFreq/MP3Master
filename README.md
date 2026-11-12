@@ -1,6 +1,6 @@
 # 🎵 MP3Master
 
-> Fast, clean MP3 downloader for YouTube, Spotify, and Apple Music with original studio album art and ID3 metadata.
+> Fast, clean MP3 downloader for YouTube, Spotify, and Apple Music.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
